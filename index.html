@@ -29,15 +29,29 @@
 
     // const Home = ()=> <hr/>;
 
-    const Pager = ({users, pageChange, pageCount, id})=>{
+    const PersonDetails = ({findPerson})=>{
+
+
+
+    }
+
+    const Pager = ({users, pageChange, pageCount, id, onSubmit, name})=>{
       return(
       <div>
       <div>
           <button type="button" onClick={ ()=> pageChange(0)}>First</button>
-          <button type="button" onClick={ ()=> pageChange(id-1)}>Prev</button>
+          <button disabled = {(id<1) ? true : false} type="button" onClick={ ()=> pageChange(id-1)}>Prev</button>
           <button type="button">{id}</button>
-          <button type="button" onClick={ ()=> pageChange(id+1)}>Next</button>
-          <button type="button" onClick={ ()=> pageChange(pageCount)}>Last</button>
+          <button disabled = {(id>pageCount-2) ? true : false} type="button" onClick={ ()=> pageChange(id+1)}>Next{" "}</button>
+          <button type="button" onClick={ ()=> pageChange(pageCount-1)}>Last</button>
+      </div>
+      <div>
+        <form onSubmit = {onSubmit}>
+          <label htmlFor = 'search'></label>
+          <input name= 'name' value={name} type='text'/>
+          <button type='submit'>Go</button>
+          <button type='submit'>Clear</button>
+        </form>
       </div>
       <div>
         <table>
@@ -76,11 +90,14 @@
         super();
         this.state = {
           users: [],
-          userCount: 0,
           id: 0,
-          pageCount: 0
+          pageCount: 0,
+          name: "",
+          searchPerson: {}
         }
         this.pageChange = this.pageChange.bind(this);
+        this.findPerson = this.findPerson.bind(this);
+
       }
 
     pageChange(idx) {
@@ -88,6 +105,28 @@
       event.preventDefault();
       const id = idx;
       this.setState({id});
+    }
+
+    onSubmit(event){
+      this.setState({
+        [event.target.name]: event.target.value
+      })
+    }
+
+
+    findPerson(event){
+      event.preventDefault();
+      const searchInput = event.target.value;
+      const currentPeople = this.state.users;
+      const searchPerson = currentPeople.find((el)=> {
+
+        if((el.firstName || el.lastName || el.middleName || el.email || el.title) === searchInput){
+          return el;
+        }
+      });
+
+      this.setState({searchPerson});
+
     }
 
 
@@ -101,23 +140,36 @@
         const users = userPage.users;
         const userCount = userPage.count;
         this.setState({users});
-        this.setState({userCount});
 
         const countPerPage = users.length;
         const pageCount = Math.ceil(userCount/countPerPage);
         this.setState({pageCount});
         console.log(this.state.pageCount);
 
-        const pageNums = [];
-        for(let i = 0; i < pageCount; i++){
-          pageNums.push({
-            idx: i,
-            text: i + 1
-          });
-        }
+        // const pageNums = [];
+        // for(let i = 0; i < pageCount; i++){
+        //   pageNums.push({
+        //     idx: i,
+        //     text: i + 1
+        //   });
+        // }
 
+      }
+      catch(err){
+        console.log(err);
+      }
 
+    }
 
+    async componentDidUpdate(){
+
+      try{
+        const userApi = axios.create({
+        baseURL: "https://acme-users-api-rev.herokuapp.com/api/"
+        })
+        const userPage = (await userApi.get(`/users/${this.state.id}`)).data;
+        const users = userPage.users;
+        this.setState({users});
       }
       catch(err){
         console.log(err);
@@ -127,9 +179,9 @@
 
     render(){
         const {users, userCount, pageCount, id} = this.state;
-        const {pageChange} = this;
+        const {pageChange, findPerson} = this;
         return (
-          <Pager users = {users} pageChange = {pageChange} pageCount = {pageCount} id= {id}/>
+          <Pager users = {users} pageChange = {pageChange} pageCount = {pageCount} id= {id} findPerson = {findPerson}/>
         )
       }
 
