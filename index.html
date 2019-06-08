@@ -5,6 +5,10 @@
   a{
     margin-right: 20px;
   }
+
+  table, tr, td{
+    border: 0.1px solid black;
+  }
 </style>
     <script src='https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.js'></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
@@ -25,15 +29,15 @@
 
     // const Home = ()=> <hr/>;
 
-    const Pager = ({users})=>{
+    const Pager = ({users, pageChange, pageCount, id})=>{
       return(
       <div>
       <div>
-          <button type="button">First</button>
-          <button type="button">Prev</button>
-          <button type="button">Page Num</button>
-          <button type="button">Next</button>
-          <button type="button">Last</button>
+          <button type="button" onClick={ ()=> pageChange(0)}>First</button>
+          <button type="button" onClick={ ()=> pageChange(id-1)}>Prev</button>
+          <button type="button">{id}</button>
+          <button type="button" onClick={ ()=> pageChange(id+1)}>Next</button>
+          <button type="button" onClick={ ()=> pageChange(pageCount)}>Last</button>
       </div>
       <div>
         <table>
@@ -45,67 +49,89 @@
             <th>Email</th>
             <th>Title</th>
           </tr>
-          <tr>
-            {users.map((person, idx) => {
+
+            {users.map((person) => {
 
               return(
-
-                    <td>First Name</td>
-                    <td>Last Name</td>
-                    <td>Middle Name</td>
-                    <td>Email</td>
-                    <td>Title</td>
+                <tr key = {person.id}>
+                    <td>{person.firstName}</td>
+                    <td>{person.lastName}</td>
+                    <td>{person.middleName}</td>
+                    <td>{person.email}</td>
+                    <td>{person.title}</td>
+                </tr>
               )
-            });
+            })
             }
-
-          </tr>
           </tbody>
         </table>
       </div>
       </div>
-
       )
-
-    };
+    }
 
 
     class Users extends React.Component{
-      render(){
-        const {users} = this.state;
-        return (
-          <Pager users = {users}/>
-        )
-      }
       constructor(){
         super();
         this.state = {
-          users: {},
-
+          users: [],
+          userCount: 0,
+          id: 0,
+          pageCount: 0
         }
+        this.pageChange = this.pageChange.bind(this);
       }
+
+    pageChange(idx) {
+      console.log(idx);
+      event.preventDefault();
+      const id = idx;
+      this.setState({id});
+    }
 
 
     async componentDidMount(){
+
       try{
         const userApi = axios.create({
         baseURL: "https://acme-users-api-rev.herokuapp.com/api/"
         })
-        const userPage = (await userApi.get('/users/')).data;
+        const userPage = (await userApi.get(`/users/${this.state.id}`)).data;
         const users = userPage.users;
         const userCount = userPage.count;
+        this.setState({users});
+        this.setState({userCount});
+
         const countPerPage = users.length;
         const pageCount = Math.ceil(userCount/countPerPage);
-        console.log(pageCount);
+        this.setState({pageCount});
+        console.log(this.state.pageCount);
 
-        this.setState({users});
-        console.log(this.state.users);
+        const pageNums = [];
+        for(let i = 0; i < pageCount; i++){
+          pageNums.push({
+            idx: i,
+            text: i + 1
+          });
+        }
+
+
+
       }
       catch(err){
         console.log(err);
       }
 
     }
+
+    render(){
+        const {users, userCount, pageCount, id} = this.state;
+        const {pageChange} = this;
+        return (
+          <Pager users = {users} pageChange = {pageChange} pageCount = {pageCount} id= {id}/>
+        )
+      }
 
     }
 
@@ -116,7 +142,7 @@
           <Route path='/' exact />
 
           <Link to='/users'>Users</Link>
-          <Route path='/users' component = { Users } />
+          <Route path='/users/:idx?' component = { Users } />
         </HashRouter>
       );
     }
